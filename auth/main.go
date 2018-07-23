@@ -54,13 +54,8 @@ func generatePolicy(principalId string, effect string, resource string) events.A
 			},
 		}
 	}
-
-	// Optional output with custom properties of the String, Number or Boolean type.
-	authResponse.Context = map[string]interface{}{
-		"stringKey":  "stringval",
-		"numberKey":  123,
-		"booleanKey": true,
-	}
+	
+	authResponse.Context = map[string]interface{}{}
 	return authResponse
 }
 
