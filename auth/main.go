@@ -13,14 +13,14 @@ import (
 )
 
 const ENV_REGION = `REGION`
-//TODO add configuration to get the jwksURL
+
 func getKey(token *jwt.Token) (interface{}, error) {
 
 	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json",os.Getenv(ENV_REGION), "<user pool id>")
 
 	fmt.Printf("JWKS URL: %s", jwksURL)
 	// TODO: cache response so we don't have to make a request every time
-	// we want to verify a JWT
+	// must be set manually in API Gateway Authorizers (checkbox)
 	set, err := jwk.FetchHTTP(jwksURL)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func getKey(token *jwt.Token) (interface{}, error) {
 }
 
 // Help function to generate an IAM policy
-func generatePolicy(principalId, effect, resource string) events.APIGatewayCustomAuthorizerResponse {
+func generatePolicy(principalId string, effect string, resource string) events.APIGatewayCustomAuthorizerResponse {
 	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalId}
 
 	if effect != "" && resource != "" {
