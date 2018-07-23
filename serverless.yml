@@ -1,0 +1,42 @@
+service: go-cognito-auth
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  appName: go-cognito-auth
+  
+provider:
+  name: aws
+  runtime: go1.x
+  stage: dev
+  region: ap-southeast-2
+  memorySize: 128
+  environment:
+    REGION: ${self:provider.region}
+  tags:
+    appName: ${self:custom.appName}
+    stage: ${self:custom.stage}
+    owner: tony.truong
+
+package:
+ exclude:
+   - ./**
+ include:
+   - ./bin/**
+
+functions:
+  auth:
+    handler: bin/auth
+  privateFunc:
+    handler: bin/privateFunc
+    events:
+      - http:
+          path: authenticated
+          method: get
+          cors: true
+          authorizer: auth
+  
+
+# Create our resources with separate CloudFormation templates
+resources:
+  # Cognito User Pool
+  - ${file(resources/cognito-user-pool.yml)}
