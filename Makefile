@@ -14,5 +14,5 @@ test:	## Run Short tests
 
 build: ## Run dep ensure and build linux binary of all individual functions
 	dep ensure
-	env GOOS=linux go build -ldflags="-s -w" -o bin/auth auth/main.go
-	env GOOS=linux go build -ldflags="-s -w" -o bin/privateFunc privateFunc/main.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/auth functions/auth/main.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/privateFunc functions/privateFunc/main.go
