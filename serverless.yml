@@ -1,5 +1,7 @@
 service: go-cognito-auth
 
+frameworkVersion: ">=1.28.0 <2.0.0"
+
 custom:
   stage: ${opt:stage, self:provider.stage}
   appName: go-cognito-auth
