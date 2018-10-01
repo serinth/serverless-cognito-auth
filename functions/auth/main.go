@@ -2,68 +2,25 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"errors"
-	"github.com/lestrrat/go-jwx/jwk"
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/serinth/serverless-cognito-auth/util"
 	"os"
 	"strings"
 )
 
-const ENV_REGION = `REGION`
-
-func getKey(token *jwt.Token) (interface{}, error) {
-
-	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json",os.Getenv(ENV_REGION), "<user pool id>")
-
-	fmt.Printf("JWKS URL: %s", jwksURL)
-	// TODO: cache response so we don't have to make a request every time
-	// must be set manually in API Gateway Authorizers (checkbox)
-	set, err := jwk.FetchHTTP(jwksURL)
-	if err != nil {
-		return nil, err
-	}
-
-	keyID, ok := token.Header["kid"].(string)
-	if !ok {
-		return nil, errors.New("expecting JWT header to have string kid")
-	}
-
-	if key := set.LookupKeyID(keyID); len(key) == 1 {
-		return key[0].Materialize()
-	}
-
-	return nil, errors.New("unable to find key")
-}
-
-// Help function to generate an IAM policy
-func generatePolicy(principalId string, effect string, resource string) events.APIGatewayCustomAuthorizerResponse {
-	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalId}
-
-	if effect != "" && resource != "" {
-		authResponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
-			Version: "2012-10-17",
-			Statement: []events.IAMPolicyStatement{
-				{
-					Action:   []string{"execute-api:Invoke"},
-					Effect:   effect,
-					Resource: []string{resource},
-				},
-			},
-		}
-	}
-	
-	authResponse.Context = map[string]interface{}{}
-	return authResponse
-}
+var REGION string
+var USER_POOL_ID string
+var APP_CLIENT_ID string
 
 func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
 	splitToken := strings.Split(event.AuthorizationToken, "Bearer ")
 	tokenString := splitToken[1]
 
-	token, err := jwt.Parse(tokenString, getKey)
+	token, err := jwt.Parse(tokenString, util.GetKey(REGION, USER_POOL_ID))
 	if err != nil {
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New(fmt.Sprintf("Error: Invalid token with error: %v", err))
 	}
@@ -77,7 +34,19 @@ func handleRequest(ctx context.Context, event events.APIGatewayCustomAuthorizerR
 		fmt.Printf("%s\t%v\n", key, value)
 	}
 
-	return generatePolicy(claims["sub"].(string), "Allow", event.MethodArn), nil
+	badClaims := claims.Valid()
+
+	if badClaims != nil || !claims.VerifyAudience(APP_CLIENT_ID, true) {
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Invalid Token.")
+	}
+
+	return util.GenerateLambdaInvokePolicy(claims["sub"].(string), "Allow", event.MethodArn), nil
+}
+
+func init() {
+	REGION = os.Getenv("REGION")
+	USER_POOL_ID = os.Getenv("USER_POOL_ID")
+	APP_CLIENT_ID = os.Getenv("APP_CLIENT_ID")
 }
 
 func main() {

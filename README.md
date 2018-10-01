@@ -1,17 +1,15 @@
-# Serverless Auth Test Repo
-This is a spike on testing Cognito for authentication and AWS Lambda functions in Go.
-Provider: AWS
-
-This solution does not use the identity pool for giving the client access straight to the AWS resources.
-
-It uses a custom authorizer function which looks at the JWT. The reason for this is that there was too much vendor lock in using Cognito and Identity Pools or took too much effort to get fine grained permissions.
-
-Instead, this will allow us to swap out authenticators e.g. Auth0 by using standard JWT verification.
+# Serverless Auth
+Collection of Cognito Auth examples using the User pool and Identity Pool.
 
 The User Pool needs to be deployed first and then the JWKS URL needs to be updated in the auth function.
-# AWS Cognito
 
-**User Pool** manages Two factor auth either via Phone number or Email address. It also manages confirmation code to verify those fields.
+# List of Auth Functions
+Functions sit in `/functions` folder
+
+|Name|Description|Requires Identity Pool?|
+|---|---|:-:|
+|auth|Provides basic authentication with a User Pool. Checks the aud claim, expiration and validity of the JWT.|N
+
 
 # Deployment
 

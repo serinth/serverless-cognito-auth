@@ -28,6 +28,9 @@ package:
 functions:
   auth:
     handler: bin/auth
+    environment:
+      APP_CLIENT_ID: ""
+      USER_POOL_ID: ""
   privateFunc:
     handler: bin/privateFunc
     events:
